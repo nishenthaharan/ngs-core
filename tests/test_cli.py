@@ -46,6 +46,31 @@ class CLITests(unittest.TestCase):
         self.assertEqual(set(payload["results"]), {"read1", "read2"})
         self.assertEqual(payload["results"]["read1"]["reads"], 2)
 
+    def test_filter_command_writes_outputs_and_stats(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "filtered.fastq"
+            stats = Path(directory) / "stats.json"
+            with contextlib.redirect_stderr(io.StringIO()):
+                exit_code = main(
+                    [
+                        "filter",
+                        str(DATA / "reads_R1.fastq"),
+                        "--output",
+                        str(output),
+                        "--min-length",
+                        "1",
+                        "--max-n-fraction",
+                        "1",
+                        "--quality-trim",
+                        "-1",
+                        "--stats",
+                        str(stats),
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output.exists())
+            self.assertEqual(json.loads(stats.read_text(encoding="utf-8"))["output_reads"], 2)
+
     def test_bad_fastq_has_concise_exit_code(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "bad.fastq"
@@ -65,6 +90,23 @@ class CLITests(unittest.TestCase):
                 exit_code = main(["qc", str(input_path), "--output", str(input_path)])
             self.assertEqual(exit_code, 2)
             self.assertEqual(input_path.read_text(encoding="utf-8"), original)
+
+    def test_stats_refuses_to_overwrite_filtered_reads(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "filtered.fastq"
+            with contextlib.redirect_stderr(io.StringIO()):
+                exit_code = main(
+                    [
+                        "filter",
+                        str(DATA / "reads_R1.fastq"),
+                        "--output",
+                        str(output),
+                        "--stats",
+                        str(output),
+                    ]
+                )
+            self.assertEqual(exit_code, 2)
+            self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":

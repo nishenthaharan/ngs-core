@@ -13,6 +13,7 @@ from typing import Any
 from . import __version__
 from .exceptions import ConfigurationError, NGSCoreError
 from .fastq import read_fastq, read_paired_fastq
+from .filtering import FilterConfig, filter_fastq
 from .qc import QCAccumulator, calculate_qc
 from .report import infer_report_format, render_report
 
@@ -20,7 +21,7 @@ from .report import infer_report_format, render_report
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ngs-core",
-        description="Streaming FASTQ validation and quality control.",
+        description="Streaming FASTQ quality control and preprocessing.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -54,6 +55,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="validate files independently without matching read identifiers",
     )
     validate.set_defaults(handler=_run_validate)
+
+    filtering = subparsers.add_parser("filter", help="trim and filter FASTQ reads")
+    filtering.add_argument("input", help="read 1 FASTQ/FASTQ.GZ")
+    filtering.add_argument("-o", "--output", required=True, help="filtered read 1 output")
+    filtering.add_argument("--read2", help="optional paired read 2 input")
+    filtering.add_argument("--output2", help="filtered paired read 2 output")
+    filtering.add_argument("--min-length", type=_positive_int, default=50)
+    filtering.add_argument("--min-mean-quality", type=float, default=20.0)
+    filtering.add_argument("--max-n-fraction", type=float, default=0.05)
+    filtering.add_argument("--trim-front", type=_nonnegative_int, default=0)
+    filtering.add_argument("--trim-tail", type=_nonnegative_int, default=0)
+    filtering.add_argument(
+        "--quality-trim",
+        type=int,
+        default=20,
+        help="3' sliding-window threshold; use -1 to disable",
+    )
+    filtering.add_argument("--quality-window", type=_positive_int, default=4)
+    filtering.add_argument("--adapter", help="exact adapter sequence to clip")
+    filtering.add_argument("--phred-offset", type=int, choices=(33, 64), default=33)
+    filtering.add_argument(
+        "--skip-pair-validation",
+        action="store_true",
+        help="do not compare paired read identifiers",
+    )
+    filtering.add_argument(
+        "--stats",
+        help="write filtering statistics as JSON; summary goes to stderr otherwise",
+    )
+    filtering.set_defaults(handler=_run_filter)
+
     return parser
 
 
@@ -64,17 +96,30 @@ def _positive_int(value: str) -> int:
     return parsed
 
 
+def _nonnegative_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be zero or greater")
+    return parsed
+
+
 def _same_path(first: str, second: str) -> bool:
     if first == "-" or second == "-":
         return first == second
     return Path(first).resolve(strict=False) == Path(second).resolve(strict=False)
 
 
-def _reject_report_collision(output: str, inputs: Sequence[str | None]) -> None:
-    if output == "-":
-        return
-    if any(_same_path(output, input_path) for input_path in inputs if input_path is not None):
-        raise ConfigurationError("report path must not overwrite a FASTQ input")
+def _reject_output_collisions(
+    outputs: Sequence[str | None],
+    inputs: Sequence[str | None],
+) -> None:
+    output_paths = [path for path in outputs if path is not None and path != "-"]
+    input_paths = [path for path in inputs if path is not None and path != "-"]
+    if any(_same_path(output, input_path) for output in output_paths for input_path in input_paths):
+        raise ConfigurationError("report/statistics paths must not overwrite FASTQ inputs")
+    for index, output in enumerate(output_paths):
+        if any(_same_path(output, other) for other in output_paths[index + 1 :]):
+            raise ConfigurationError("output, report, and statistics paths must be different")
 
 
 def _paired_qc(args: argparse.Namespace) -> dict[str, Any]:
@@ -101,7 +146,7 @@ def _paired_qc(args: argparse.Namespace) -> dict[str, Any]:
 def _run_qc(args: argparse.Namespace) -> int:
     if args.read2 and args.input == "-":
         raise ConfigurationError("paired QC does not support stdin")
-    _reject_report_collision(args.output, [args.input, args.read2])
+    _reject_output_collisions([args.output], [args.input, args.read2])
     results = (
         _paired_qc(args)
         if args.read2
@@ -157,6 +202,42 @@ def _run_validate(args: argparse.Namespace) -> int:
         indent=2,
     )
     sys.stdout.write("\n")
+    return 0
+
+
+def _run_filter(args: argparse.Namespace) -> int:
+    _reject_output_collisions(
+        [args.output, args.output2, args.stats],
+        [args.input, args.read2],
+    )
+    quality_trim = None if args.quality_trim == -1 else args.quality_trim
+    config = FilterConfig(
+        min_length=args.min_length,
+        min_mean_quality=args.min_mean_quality,
+        max_n_fraction=args.max_n_fraction,
+        trim_front=args.trim_front,
+        trim_tail=args.trim_tail,
+        quality_trim=quality_trim,
+        quality_window=args.quality_window,
+        adapter=args.adapter,
+        phred_offset=args.phred_offset,
+    )
+    stats = filter_fastq(
+        args.input,
+        args.output,
+        config,
+        read2=args.read2,
+        output2=args.output2,
+        validate_names=not args.skip_pair_validation,
+    )
+    rendered = json.dumps(stats.as_dict(), indent=2, sort_keys=True) + "\n"
+    if args.stats:
+        stats_path = Path(args.stats)
+        stats_path.parent.mkdir(parents=True, exist_ok=True)
+        stats_path.write_text(rendered, encoding="utf-8")
+        print(f"Filtering statistics written to {stats_path}", file=sys.stderr)
+    else:
+        sys.stderr.write(rendered)
     return 0
 
 

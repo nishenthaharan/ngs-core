@@ -15,4 +15,19 @@ ngs-core qc \
   --sample synthetic-paired-demo \
   --output "${report_dir}/synthetic-paired-demo.html"
 
+ngs-core filter \
+  "${project_root}/tests/data/reads_R1.fastq" \
+  --read2 "${project_root}/tests/data/reads_R2.fastq" \
+  --output "${report_dir}/clean_R1.fastq.gz" \
+  --output2 "${report_dir}/clean_R2.fastq.gz" \
+  --min-length 1 \
+  --max-n-fraction 1 \
+  --quality-trim=-1 \
+  --stats "${report_dir}/filtering.json"
+
+ngs-core validate \
+  "${report_dir}/clean_R1.fastq.gz" \
+  --read2 "${report_dir}/clean_R2.fastq.gz"
+
 echo "Demo report: ${report_dir}/synthetic-paired-demo.html"
+echo "Filtering stats: ${report_dir}/filtering.json"
