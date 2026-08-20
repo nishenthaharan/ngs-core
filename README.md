@@ -4,18 +4,19 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**NGS Core v0.1** provides a strict, streaming FASTQ foundation for reproducible
-next-generation sequencing workflows. It validates single- and paired-end files without
-loading complete datasets into memory.
+**NGS Core v0.2** adds memory-efficient FASTQ quality control and visual reporting to the
+validated single- and paired-end parsing foundation introduced in v0.1.
 
 ## Capabilities
 
-- Reads plain FASTQ and gzip-compressed FASTQ detected from file bytes.
-- Validates headers, separators, record completeness, sequence/quality lengths, and bases.
-- Detects paired files with different read counts or unsynchronised identifiers.
-- Supports common `/1`, `/2`, and CASAVA-style read naming.
-- Produces a machine-readable validation summary.
-- Exposes typed Python iterators for use in future NGS modules.
+- Plain and gzip FASTQ parsing with structural and paired-end validation.
+- Read count, total bases, GC%, N%, Q20, Q30, and mean quality.
+- Minimum, maximum, mean, median, distribution, and read-length N50.
+- Per-cycle mean quality, Q20/Q30, and A/C/G/T/N composition.
+- Bounded duplication estimation using up to 100,000 read prefixes.
+- Exact signatures for common Illumina, Nextera, and small-RNA adapters.
+- JSON, TSV, and self-contained offline HTML reports.
+- Protection against accidentally overwriting FASTQ inputs with reports.
 
 ## Installation
 
@@ -30,55 +31,75 @@ python -m pip install -e .
 
 NGS Core requires Python 3.10 or later and has no runtime dependencies.
 
-## Command-line use
-
-Validate one file:
-
-```bash
-ngs-core validate sample.fastq.gz
-```
-
-Validate paired-end reads and confirm that the mates are synchronised:
+## Validate input
 
 ```bash
 ngs-core validate sample_R1.fastq.gz --read2 sample_R2.fastq.gz
 ```
 
-Example output:
+## Generate QC reports
+
+Create a self-contained HTML report:
+
+```bash
+ngs-core qc sample_R1.fastq.gz \
+  --read2 sample_R2.fastq.gz \
+  --sample tumour-replicate-1 \
+  --output reports/tumour-replicate-1.html
+```
+
+Create analysis-friendly formats:
+
+```bash
+ngs-core qc sample.fastq.gz --output reports/sample.json
+ngs-core qc sample.fastq.gz --output reports/sample.tsv
+```
+
+Sample only the first one million reads when rapid screening is appropriate:
+
+```bash
+ngs-core qc sample.fastq.gz --max-reads 1000000 --output quick-qc.json
+```
+
+## Stable report schema
+
+Reports declare `schema_version: "1.0"`. Paired input produces `read1` and `read2`
+objects with identical fields, allowing dashboards and workflow engines to consume either
+layout predictably.
 
 ```json
 {
-  "valid": true,
-  "files": 2,
-  "reads": 5000000,
-  "bases": 750000000
+  "schema_version": "1.0",
+  "tool": "ngs-core",
+  "tool_version": "0.2.0",
+  "sample": "tumour-replicate-1",
+  "results": {
+    "read1": {
+      "reads": 1250000,
+      "q30_percent": 91.72,
+      "gc_percent": 48.13
+    }
+  }
 }
 ```
 
-Malformed records return exit code `2` with the affected file and record number.
+The example is abbreviated; generated reports include cycle and length arrays.
 
 ## Python API
 
 ```python
-from ngs_core import read_fastq, read_paired_fastq
+from ngs_core import calculate_qc
 
-for record in read_fastq("sample.fastq.gz"):
-    print(record.identifier, len(record.sequence))
-
-for read1, read2 in read_paired_fastq("R1.fastq.gz", "R2.fastq.gz"):
-    assert read1.pair_key == read2.pair_key
+result = calculate_qc("sample.fastq.gz")
+print(result.q30_percent, result.gc_percent)
 ```
 
-## Why this is the first version
+## Metric interpretation
 
-Every later QC, trimming, alignment, or visualisation component depends on correct FASTQ
-iteration and pair integrity. Version 0.1 therefore establishes and tests that boundary
-before analytical features are added.
-
-## Performance model
-
-Parsing is `O(n)` in the number of bases. Memory usage is normally `O(r)`, where `r` is
-the current read length. No full-file record list is created by the command-line tool.
+The duplication value is a screening estimate, not an optical-duplicate or UMI-aware
+calculation. Adapter observations use exact sequence signatures. Assay-specific decisions
+should consider the platform, library preparation, expected insert size, and downstream
+analysis rather than applying universal thresholds.
 
 ## Development
 
@@ -90,13 +111,10 @@ pytest
 python -m build
 ```
 
-Synthetic test fixtures cover plain and gzip input, truncated records, length mismatches,
-paired-name mismatches, unequal read counts, CLI summaries, and error handling.
-
 ## Next version
 
-Version 0.2 adds streaming QC metrics and JSON, TSV, and self-contained HTML reports on
-top of this validated FASTQ layer.
+Version 0.3 adds deterministic trimming, filtering, gzip output, paired-read retention,
+atomic output handling, and machine-readable preprocessing statistics.
 
 ## License
 

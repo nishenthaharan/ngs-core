@@ -1,37 +1,45 @@
-# Architecture — v0.1
+# Architecture — v0.2
 
-Version 0.1 intentionally establishes one narrow boundary: trusted streaming FASTQ input.
+Version 0.2 retains the v0.1 streaming parser and adds bounded-memory QC accumulation and
+three report renderers.
 
 ```text
 FASTQ / FASTQ.GZ
       │
       ▼
-open_fastq_text()
+fastq.py ──► validated FastqRecord stream
       │
       ▼
-read_fastq() ──► FastqRecord
-      │
-      └──► read_paired_fastq() ──► synchronized R1/R2 tuples
+qc.py ──► QCAccumulator ──► QCResult
+                              │
+                              ▼
+                    report.py ──► JSON / TSV / HTML
 ```
 
-## `fastq.py`
+## QC accumulation
 
-- Detects gzip using magic bytes instead of relying only on a filename suffix.
-- Reads exactly four lines for each record and reports the failing record number.
-- Normalises sequence bases to uppercase while preserving quality characters.
-- Validates sequence/quality length equality and decodes Phred scores explicitly.
-- Iterates paired files together and stops on count or identifier mismatches.
+Every read updates exact base, quality, length, and per-cycle counts. The length
+distribution is stored as a histogram rather than one element per read. Per-cycle arrays
+grow only to the longest read observed.
 
-The parser rejects wrapped FASTQ. Silent acceptance of ambiguous wrapping can shift record
-boundaries and corrupt paired-read interpretation.
+Duplication estimation stores at most the first 100,000 sequence prefixes, explicitly
+bounding that component. Adapter screening counts exact signatures and does not claim
+approximate alignment.
 
-## `cli.py`
+## Reporting
 
-The `validate` command consumes the same public iterators used by the Python API. Expected
-data and filesystem failures become concise diagnostics with exit code `2`; unexpected
-programming failures are not hidden.
+JSON is the stable machine-readable representation. TSV flattens summary metrics for
+statistical tools. HTML embeds its CSS and SVG chart, requires no JavaScript or network
+connection, and can be archived with an analysis run.
 
-## Extension contract
+## Safety boundary
 
-Later modules must consume `FastqRecord` and the public readers rather than implementing
-new FASTQ parsing. This keeps validation behaviour consistent across QC and preprocessing.
+The CLI resolves paths before writing a report and rejects a destination that aliases an
+input FASTQ. The analytical result is fully rendered in memory before the destination is
+written.
+
+## Complexity
+
+For `n` bases and maximum read length `r`, QC time is `O(n)` and core cycle memory is
+`O(r)`. The number of distinct read lengths and bounded duplication sample add small,
+explicit state.
