@@ -48,9 +48,7 @@ class FastqReaderTests(unittest.TestCase):
             list(read_fastq(io.StringIO("@r1\nACGT\n+\nIII\n")))
 
     def test_reads_paired_records(self) -> None:
-        pairs = list(
-            read_paired_fastq(DATA / "reads_R1.fastq", DATA / "reads_R2.fastq")
-        )
+        pairs = list(read_paired_fastq(DATA / "reads_R1.fastq", DATA / "reads_R2.fastq"))
         self.assertEqual(len(pairs), 3)
         self.assertEqual(pairs[1][0].pair_key, pairs[1][1].pair_key)
 
