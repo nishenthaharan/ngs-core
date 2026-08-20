@@ -8,7 +8,6 @@ from ngs_core.exceptions import ConfigurationError, PairingError
 from ngs_core.fastq import FastqRecord, read_fastq
 from ngs_core.filtering import FilterConfig, filter_fastq, rejection_reason, trim_record
 
-
 DATA = Path(__file__).parent / "data"
 
 
