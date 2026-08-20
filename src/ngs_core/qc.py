@@ -91,6 +91,8 @@ class QCAccumulator:
         self.max_length = max(self.max_length, length)
         self.length_counts[length] += 1
 
+        # Variable-length reads reach different cycle depths. Grow the arrays lazily so
+        # every cycle stays aligned without scanning the FASTQ twice.
         missing = length - len(self.cycle_counts)
         if missing > 0:
             self.cycle_counts.extend([0] * missing)
@@ -111,6 +113,8 @@ class QCAccumulator:
             if adapter in sequence:
                 self.adapter_hits[name] += 1
 
+        # Duplication is deliberately estimated from a bounded prefix sample. Storing a
+        # 50-base signature avoids retaining complete reads from multi-gigabyte inputs.
         if self.reads <= self.duplicate_sample_size:
             self.duplicate_sequences[sequence[:50]] += 1
 
@@ -152,12 +156,8 @@ class QCAccumulator:
             min_length=self.min_length or 0,
             max_length=self.max_length,
             read_length_n50=_read_length_n50(self.length_counts),
-            duplicate_estimate_percent=_safe_percentage(
-                duplicate_estimate, duplicate_total
-            ),
-            adapter_hits={
-                name: self.adapter_hits.get(name, 0) for name in DEFAULT_ADAPTERS
-            },
+            duplicate_estimate_percent=_safe_percentage(duplicate_estimate, duplicate_total),
+            adapter_hits={name: self.adapter_hits.get(name, 0) for name in DEFAULT_ADAPTERS},
             per_cycle=per_cycle,
             length_distribution=[
                 {"length": length, "reads": count}
