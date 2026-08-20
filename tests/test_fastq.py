@@ -9,7 +9,6 @@ from pathlib import Path
 from ngs_core.exceptions import FastqFormatError, PairingError
 from ngs_core.fastq import FastqRecord, open_fastq_text, read_fastq, read_paired_fastq
 
-
 DATA = Path(__file__).parent / "data"
 
 

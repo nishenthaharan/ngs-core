@@ -10,10 +10,11 @@ from __future__ import annotations
 import gzip
 import io
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, TextIO
+from typing import TextIO
 
 from .exceptions import FastqFormatError, PairingError
 

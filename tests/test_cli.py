@@ -9,7 +9,6 @@ from pathlib import Path
 
 from ngs_core.cli import main
 
-
 DATA = Path(__file__).parent / "data"
 
 
