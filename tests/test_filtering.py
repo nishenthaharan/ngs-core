@@ -80,14 +80,16 @@ class FilteringTests(unittest.TestCase):
             self.assertEqual(len(list(read_fastq(output2))), 2)
 
     def test_requires_both_paired_outputs(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaises(ConfigurationError):
-                filter_fastq(
-                    DATA / "reads_R1.fastq",
-                    Path(directory) / "out.fastq",
-                    FilterConfig(),
-                    read2=DATA / "reads_R2.fastq",
-                )
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            self.assertRaises(ConfigurationError),
+        ):
+            filter_fastq(
+                DATA / "reads_R1.fastq",
+                Path(directory) / "out.fastq",
+                FilterConfig(),
+                read2=DATA / "reads_R2.fastq",
+            )
 
     def test_rejects_output_over_input(self) -> None:
         config = FilterConfig(min_length=1)

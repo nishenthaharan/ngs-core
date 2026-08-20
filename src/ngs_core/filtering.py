@@ -170,6 +170,8 @@ def _atomic_fastq_output(destination: str | Path):
     try:
         with open_fastq_text(temporary_path, "wt") as handle:
             yield handle
+        # The temporary file lives beside the destination, so os.replace performs an
+        # atomic same-filesystem handoff after the complete stream has been written.
         os.replace(temporary_path, path)
     except BaseException:
         temporary_path.unlink(missing_ok=True)
@@ -195,6 +197,8 @@ def filter_fastq(
         raise ConfigurationError("read2 and output2 must be supplied together")
     inputs = [read1] + ([read2] if read2 is not None else [])
     outputs = [output1] + ([output2] if output2 is not None else [])
+    # Check the complete input/output cross-product before opening a writer. This prevents
+    # accidental truncation even when equivalent paths use different relative spellings.
     if any(
         _same_file_path(input_path, output_path)
         for input_path in inputs
@@ -246,6 +250,7 @@ def filter_fastq(
             )
             reason1 = rejection_reason(trimmed1, config)
             reason2 = rejection_reason(trimmed2, config)
+            # Never emit an orphaned mate: rejection of either read rejects the full pair.
             if reason1 or reason2:
                 stats.discarded[f"pair_{reason1 or reason2}"] += 2
                 continue
