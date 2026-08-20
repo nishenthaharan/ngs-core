@@ -46,9 +46,7 @@ class FilterConfig:
         if self.adapter is not None:
             adapter = self.adapter.upper()
             if len(adapter) < 6 or any(not char.isalpha() for char in adapter):
-                raise ConfigurationError(
-                    "adapter must contain at least six alphabetic bases"
-                )
+                raise ConfigurationError("adapter must contain at least six alphabetic bases")
 
 
 @dataclass(slots=True)
@@ -66,9 +64,7 @@ class FilterStats:
         result = asdict(self)
         result["discarded"] = dict(sorted(self.discarded.items()))
         result["retained_percent"] = (
-            round(100 * self.output_reads / self.input_reads, 4)
-            if self.input_reads
-            else 0.0
+            round(100 * self.output_reads / self.input_reads, 4) if self.input_reads else 0.0
         )
         return result
 
@@ -200,9 +196,7 @@ def filter_fastq(
     # Check the complete input/output cross-product before opening a writer. This prevents
     # accidental truncation even when equivalent paths use different relative spellings.
     if any(
-        _same_file_path(input_path, output_path)
-        for input_path in inputs
-        for output_path in outputs
+        _same_file_path(input_path, output_path) for input_path in inputs for output_path in outputs
     ):
         raise ConfigurationError("input and output paths must be different")
     if output2 is not None and _same_file_path(output1, output2):
@@ -218,9 +212,7 @@ def filter_fastq(
     with ExitStack() as stack:
         handle1 = stack.enter_context(_atomic_fastq_output(output1))
         handle2 = (
-            stack.enter_context(_atomic_fastq_output(output2))
-            if output2 is not None
-            else None
+            stack.enter_context(_atomic_fastq_output(output2)) if output2 is not None else None
         )
 
         if read2 is None:
@@ -237,9 +229,7 @@ def filter_fastq(
             return stats
 
         assert handle2 is not None
-        for original1, original2 in read_paired_fastq(
-            read1, read2, validate_names=validate_names
-        ):
+        for original1, original2 in read_paired_fastq(read1, read2, validate_names=validate_names):
             _record_input(stats, original1, original2)
             trimmed1 = trim_record(original1, config)
             trimmed2 = trim_record(original2, config)

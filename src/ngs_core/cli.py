@@ -115,11 +115,7 @@ def _reject_output_collisions(
 ) -> None:
     output_paths = [path for path in outputs if path is not None and path != "-"]
     input_paths = [path for path in inputs if path is not None and path != "-"]
-    if any(
-        _same_path(output, input_path)
-        for output in output_paths
-        for input_path in input_paths
-    ):
+    if any(_same_path(output, input_path) for output in output_paths for input_path in input_paths):
         raise ConfigurationError("report/statistics paths must not overwrite FASTQ inputs")
     for index, output in enumerate(output_paths):
         if any(_same_path(output, other) for other in output_paths[index + 1 :]):
