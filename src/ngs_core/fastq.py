@@ -143,9 +143,7 @@ def _read_fastq_handle(
         raw_separator = handle.readline()
         raw_quality = handle.readline()
         if "" in (raw_sequence, raw_separator, raw_quality):
-            raise FastqFormatError(
-                f"{source_name}: truncated FASTQ record {record_number}"
-            )
+            raise FastqFormatError(f"{source_name}: truncated FASTQ record {record_number}")
 
         name = _clean_line(raw_name)
         sequence = _clean_line(raw_sequence).upper()
@@ -161,9 +159,7 @@ def _read_fastq_handle(
                 f"{source_name}: record {record_number} separator must start with '+'"
             )
         if not sequence:
-            raise FastqFormatError(
-                f"{source_name}: record {record_number} has an empty sequence"
-            )
+            raise FastqFormatError(f"{source_name}: record {record_number} has an empty sequence")
         if len(sequence) != len(quality):
             raise FastqFormatError(
                 f"{source_name}: record {record_number} has sequence length "
@@ -171,8 +167,7 @@ def _read_fastq_handle(
             )
         if any(char.isspace() for char in sequence + quality):
             raise FastqFormatError(
-                f"{source_name}: record {record_number} contains whitespace in "
-                "sequence or quality"
+                f"{source_name}: record {record_number} contains whitespace in sequence or quality"
             )
         if validate_bases and any(not (char.isalpha() or char in ".-") for char in sequence):
             raise FastqFormatError(
@@ -220,7 +215,5 @@ def quality_scores(quality: str, phred_offset: int = 33) -> list[int]:
 
     scores = [ord(char) - phred_offset for char in quality]
     if any(score < 0 or score > 93 for score in scores):
-        raise FastqFormatError(
-            f"Quality string is incompatible with Phred+{phred_offset} encoding"
-        )
+        raise FastqFormatError(f"Quality string is incompatible with Phred+{phred_offset} encoding")
     return scores
