@@ -11,3 +11,7 @@ class FastqFormatError(NGSCoreError):
 
 class PairingError(NGSCoreError):
     """Raised when paired-end inputs are not synchronized."""
+
+
+class ConfigurationError(NGSCoreError):
+    """Raised when incompatible command options are supplied."""
