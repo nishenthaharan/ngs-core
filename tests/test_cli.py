@@ -24,9 +24,7 @@ class CLITests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "qc.html"
             with contextlib.redirect_stderr(io.StringIO()):
-                exit_code = main(
-                    ["qc", str(DATA / "reads_R1.fastq"), "--output", str(output)]
-                )
+                exit_code = main(["qc", str(DATA / "reads_R1.fastq"), "--output", str(output)])
             self.assertEqual(exit_code, 0)
             self.assertIn("<!doctype html>", output.read_text(encoding="utf-8"))
 

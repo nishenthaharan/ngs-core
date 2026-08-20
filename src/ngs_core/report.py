@@ -18,12 +18,12 @@ def infer_report_format(output: str | Path, requested: str) -> str:
     if str(output) == "-":
         return "json"
     suffix = Path(output).suffix.lower()
-    return {".html": "html", ".htm": "html", ".tsv": "tsv"}.get(
-        suffix, "json"
-    )
+    return {".html": "html", ".htm": "html", ".tsv": "tsv"}.get(suffix, "json")
 
 
 def render_report(payload: dict[str, Any], report_format: str) -> str:
+    """Render a QC payload without requiring a plotting or template dependency."""
+
     if report_format == "json":
         return json.dumps(payload, indent=2, sort_keys=True) + "\n"
     if report_format == "tsv":
@@ -65,6 +65,8 @@ def _line_chart(
     height: int = 260,
     maximum: float = 42.0,
 ) -> str:
+    """Return an inline SVG so the HTML report remains a single portable file."""
+
     if not values:
         return '<p class="empty">No reads were available for this chart.</p>'
     left, right, top, bottom = 48, 16, 16, 38
@@ -80,7 +82,7 @@ def _line_chart(
     for score in (0, 10, 20, 30, 40):
         y = top + (1 - score / maximum) * plot_height
         guides.append(
-            f'<line x1="{left}" y1="{y:.2f}" x2="{width-right}" y2="{y:.2f}" '
+            f'<line x1="{left}" y1="{y:.2f}" x2="{width - right}" y2="{y:.2f}" '
             'class="grid"/><text x="8" y="'
             f'{y + 4:.2f}" class="axis">Q{score}</text>'
         )
@@ -186,7 +188,7 @@ footer {{ color:var(--muted); margin-top:48px; text-align:center }}
 <header><p class="eyebrow">NGS Core quality control</p><h1>{sample}</h1>
 <p class="subtitle">Streaming FASTQ metrics for reproducible sequencing assessment.</p>
 <p class="meta">Generated {generated} · NGS Core {version}</p></header>
-{''.join(sections)}
+{"".join(sections)}
 <footer>Generated locally by NGS Core. No sequence data leaves the analysis environment.</footer>
 </main></body></html>
 """
