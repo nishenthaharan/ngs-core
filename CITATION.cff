@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use NGS Core, please cite this software."
+title: "NGS Core"
+type: software
+version: 0.1.0
+date-released: 2026-08-20
+authors:
+  - family-names: "Balachandran"
+    given-names: "Nishenthaharan"
+repository-code: "https://github.com/nishenthaharan/ngs-core"
+url: "https://github.com/nishenthaharan/ngs-core"
+license: Apache-2.0
+keywords:
+  - bioinformatics
+  - next-generation sequencing
+  - FASTQ
+  - quality control
+  - preprocessing
