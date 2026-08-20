@@ -8,7 +8,6 @@ from ngs_core.fastq import FastqRecord
 from ngs_core.qc import QCAccumulator, calculate_qc
 from ngs_core.report import infer_report_format, render_report
 
-
 DATA = Path(__file__).parent / "data"
 
 

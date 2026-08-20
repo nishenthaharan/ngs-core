@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .fastq import FastqRecord, quality_scores, read_fastq
 
