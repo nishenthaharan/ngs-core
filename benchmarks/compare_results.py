@@ -27,12 +27,8 @@ def summarize(payload: dict[str, Any]) -> dict[BenchmarkKey, dict[str, float | i
         summaries[key] = {
             "observations": len(rows),
             "median_wall_seconds": statistics.median(row["wall_seconds"] for row in rows),
-            "median_reads_per_second": statistics.median(
-                row["reads_per_second"] for row in rows
-            ),
-            "median_bases_per_second": statistics.median(
-                row["bases_per_second"] for row in rows
-            ),
+            "median_reads_per_second": statistics.median(row["reads_per_second"] for row in rows),
+            "median_bases_per_second": statistics.median(row["bases_per_second"] for row in rows),
         }
     return summaries
 
@@ -98,8 +94,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     return int(
         any(
-            row["wall_regression_percent"] > args.max_wall_regression_percent
-            for row in comparisons
+            row["wall_regression_percent"] > args.max_wall_regression_percent for row in comparisons
         )
     )
 

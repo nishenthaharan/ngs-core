@@ -146,9 +146,7 @@ def _build_command(
             ]
         )
         if read2 is not None:
-            command.extend(
-                ["--output2", str(output_directory / f"filtered-R2-{repetition}.fastq")]
-            )
+            command.extend(["--output2", str(output_directory / f"filtered-R2-{repetition}.fastq")])
     return command
 
 
