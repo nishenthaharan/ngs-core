@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "profiles": {
+    "smoke": {
+      "records": 10000,
+      "read_length": 150,
+      "min_read_length": 150,
+      "paired": false,
+      "compression": "gzip",
+      "repetitions": 1
+    },
+    "standard": {
+      "records": 1000000,
+      "read_length": 150,
+      "min_read_length": 150,
+      "paired": false,
+      "compression": "gzip",
+      "repetitions": 5
+    },
+    "paired": {
+      "records": 1000000,
+      "read_length": 150,
+      "min_read_length": 150,
+      "paired": true,
+      "compression": "gzip",
+      "repetitions": 5
+    },
+    "variable": {
+      "records": 1000000,
+      "read_length": 250,
+      "min_read_length": 50,
+      "paired": false,
+      "compression": "gzip",
+      "repetitions": 5
+    }
+  }
+}
