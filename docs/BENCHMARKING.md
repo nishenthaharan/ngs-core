@@ -16,6 +16,24 @@ The benchmark suite should answer four questions:
 The protocol measures engineering performance only. It does not establish biological or
 clinical validity.
 
+## Repository layout
+
+Benchmark assets have distinct responsibilities so measured code, test fixtures, and
+published observations cannot be confused:
+
+```text
+benchmarks/
+├── README.md              # commands and interpretation guidance
+├── profiles.json          # versioned synthetic workload definitions
+├── generate_fastq.py      # deterministic FASTQ/FASTQ.GZ generator
+├── run_benchmarks.py      # subprocess timing and resource collection
+└── compare_results.py     # baseline/candidate median comparison
+```
+
+The benchmark programs use only the Python standard library. Normal correctness tests run
+under `tests/`; the small GitHub Actions smoke benchmark verifies that the tooling remains
+executable without treating shared CI runners as performance baselines.
+
 ## Dataset profiles
 
 All generated reads must be synthetic, deterministic, and free of identifiable sequence
