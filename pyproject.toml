@@ -52,6 +52,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config --cov=ngs_core --cov-report=term-missing"
+pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.coverage.run]

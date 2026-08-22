@@ -164,6 +164,15 @@ must be selected for the sequencing platform, library preparation, read length, 
 - Workflow wrappers for Nextflow and Snakemake
 - Alignment and coverage modules in separate focused repositories
 
+## Benchmarking
+
+Performance results should be reproducible and reported with the dataset profile,
+hardware, operating system, Python version, storage type, compression settings, and repeat
+count. See the [benchmarking protocol](docs/BENCHMARKING.md) and the associated
+[tracking issue](https://github.com/nishenthaharan/ngs-core/issues/5). Runnable synthetic
+data, measurement, and comparison tools are documented in
+[`benchmarks/README.md`](benchmarks/README.md).
+
 ## Development
 
 ```bash

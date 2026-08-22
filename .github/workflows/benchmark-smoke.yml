@@ -1,0 +1,49 @@
+name: Benchmark smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "benchmarks/**"
+      - "tests/test_benchmark_*.py"
+      - ".github/workflows/benchmark-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: Generate deterministic reads
+        run: |
+          python -m benchmarks.generate_fastq \
+            --output /tmp/ngs-core-smoke.fastq.gz \
+            --records 2000 \
+            --read-length 150 \
+            --seed 20260821 \
+            --manifest /tmp/ngs-core-smoke-manifest.json
+      - name: Measure validation
+        run: |
+          python -m benchmarks.run_benchmarks \
+            --operation validate \
+            --input /tmp/ngs-core-smoke.fastq.gz \
+            --profile smoke \
+            --records 2000 \
+            --bases 300000 \
+            --repetitions 2 \
+            --output /tmp/ngs-core-smoke-results.json
+      - name: Verify comparison path
+        run: |
+          python -m benchmarks.compare_results \
+            --baseline /tmp/ngs-core-smoke-results.json \
+            --candidate /tmp/ngs-core-smoke-results.json \
+            --output /tmp/ngs-core-smoke-comparison.json \
+            --max-wall-regression-percent 0
